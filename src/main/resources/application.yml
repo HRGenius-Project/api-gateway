@@ -1,81 +1,107 @@
-server:
-  port: 8090
 
-spring:
-  config:
-    import: optional:file:.env[.properties]
+  server:
+    port: 8090
 
-  application:
-    name: api-gateway
+  spring:
+    config:
+      import: optional:file:.env[.properties]
 
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: 6379
-      password: ${REDIS_PASSWORD:Redis@12345}
+    application:
+      name: api-gateway
 
-  cloud:
-    gateway:
-      server:
-        webflux:
-          routes:
-            # Auth Service
-            - id: auth-service
-              uri: lb://AUTH-SERVICE
-              predicates:
-                - Path=/api/auth/**
+    data:
+      redis:
+        host: ${REDIS_HOST:localhost}
+        port: 6379
+        password: ${REDIS_PASSWORD:Redis@12345}
 
-            # Employee Service
-            - id: employee-service
-              uri: lb://EMPLOYEE-SERVICE
-              predicates:
-                - Path=/api/employees/**
+    cloud:
+      gateway:
+        discovery:
+          locator:
+            enabled: true
 
-            # Attendance Service
-            - id: attendance-service
-              uri: lb://ATTENDANCE-SERVICE
-              predicates:
-                - Path=/api/attendance/**
 
-            # Leave Service
-            - id: leave-service
-              uri: lb://LEAVE-SERVICE
-              predicates:
-                - Path=/api/leaves/**
 
-            # Payroll Service
-            - id: payroll-service
-              uri: lb://PAYROLL-SERVICE
-              predicates:
-                - Path=/api/payroll/**
 
-            # Notification Service
-            - id: notification-service
-              uri: lb://NOTIFICATION-SERVICE
-              predicates:
-                - Path=/api/notifications/**
-              filters:
-                - AuthenticationFilter
+        routes:
+          # Auth Service Route via Eureka Load Balancer
+          - id: auth-service
+            uri: lb://AUTH-SERVICE
+            predicates:
+              - Path=/api/auth/**
+            filters:
+              - RemoveResponseHeader=Access-Control-Allow-Origin
+              - RemoveResponseHeader=Access-Control-Allow-Credentials
 
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
-  instance:
-    prefer-ip-address: true
+          # Employee Service
+          - id: employee-service
+            uri: lb://EMPLOYEE-SERVICE
+            predicates:
+              - Path=/api/employees/**
+            filters:
+              - AuthenticationFilter
 
-jwt:
-  secret: ${JWT_SECRET}
+          # Attendance Service
+          - id: attendance-service
+            uri: lb://ATTENDANCE-SERVICE
+            predicates:
+              - Path=/api/attendance/**
+            filters:
+              - AuthenticationFilter
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
-  endpoint:
-    gateway:
-      enabled: true
+          # Leave Service
+          - id: leave-service
+            uri: lb://LEAVE-SERVICE
+            predicates:
+              - Path=/api/leaves/**
+            filters:
+              - AuthenticationFilter
 
-logging:
-  level:
-    org.springframework.cloud.gateway: DEBUG
+          # Payroll Service
+          - id: payroll-service
+            uri: lb://PAYROLL-SERVICE
+            predicates:
+              - Path=/api/payroll/**
+            filters:
+              - AuthenticationFilter
+
+          # Notification Service
+          - id: notification-service
+            uri: lb://NOTIFICATION-SERVICE
+            predicates:
+              - Path=/api/notifications/**
+            filters:
+              - AuthenticationFilter
+
+          # Recruitment Service
+          - id: recruitment-service
+            uri: lb://RECRUITMENT-SERVICE
+            predicates:
+              - Path=/api/recruitment/**
+            filters:
+              - AuthenticationFilter
+
+  eureka:
+    client:
+      service-url:
+        defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+    instance:
+      prefer-ip-address: true
+
+  jwt:
+    secret: ${JWT_SECRET}
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: "*"
+    endpoint:
+      gateway:
+        enabled: true
+
+  logging:
+    level:
+      org.springframework.cloud.gateway: DEBUG
+      org.springframework.cloud.loadbalancer: DEBUG

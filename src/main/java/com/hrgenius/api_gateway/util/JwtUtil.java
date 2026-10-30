@@ -6,29 +6,25 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.security.Key;
 import java.nio.charset.StandardCharsets;
+import java.security.Key;
 
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret:hrgenius-super-secret-key-change-in-production-min-32-chars}")
-    private String secret;
+    private final Key key;
 
-    private Key getSignKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    public JwtUtil(@Value("${jwt.secret}") String jwtSecret) {
+        this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
     public void validateToken(final String token) {
-        Jwts.parserBuilder()
-                .setSigningKey(getSignKey())
-                .build()
-                .parseClaimsJws(token);
+        Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
     }
 
-    public Claims getClaims(final String token) {
+    public Claims extractAllClaims(final String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(getSignKey())
+                .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
