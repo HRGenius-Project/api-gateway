@@ -1,25 +1,107 @@
-server:
-  port: 8090
 
-spring:
-  application:
-    name: api-gateway
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: 6379
-      password: ${REDIS_PASSWORD:Redis@12345}
+  server:
+    port: 8090
 
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+  spring:
+    config:
+      import: optional:file:.env[.properties]
 
-jwt:
-  secret: ${JWT_SECRET:hrgenius-super-secret-key-change-in-production-min-32-chars}
+    application:
+      name: api-gateway
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
+    data:
+      redis:
+        host: ${REDIS_HOST:localhost}
+        port: 6379
+        password: ${REDIS_PASSWORD:Redis@12345}
+
+    cloud:
+      gateway:
+        discovery:
+          locator:
+            enabled: true
+
+
+
+
+        routes:
+          # Auth Service Route via Eureka Load Balancer
+          - id: auth-service
+            uri: lb://AUTH-SERVICE
+            predicates:
+              - Path=/api/auth/**
+            filters:
+              - RemoveResponseHeader=Access-Control-Allow-Origin
+              - RemoveResponseHeader=Access-Control-Allow-Credentials
+
+          # Employee Service
+          - id: employee-service
+            uri: lb://EMPLOYEE-SERVICE
+            predicates:
+              - Path=/api/employees/**
+            filters:
+              - AuthenticationFilter
+
+          # Attendance Service
+          - id: attendance-service
+            uri: lb://ATTENDANCE-SERVICE
+            predicates:
+              - Path=/api/attendance/**
+            filters:
+              - AuthenticationFilter
+
+          # Leave Service
+          - id: leave-service
+            uri: lb://LEAVE-SERVICE
+            predicates:
+              - Path=/api/leaves/**
+            filters:
+              - AuthenticationFilter
+
+          # Payroll Service
+          - id: payroll-service
+            uri: lb://PAYROLL-SERVICE
+            predicates:
+              - Path=/api/payroll/**
+            filters:
+              - AuthenticationFilter
+
+          # Notification Service
+          - id: notification-service
+            uri: lb://NOTIFICATION-SERVICE
+            predicates:
+              - Path=/api/notifications/**
+            filters:
+              - AuthenticationFilter
+
+          # Recruitment Service
+          - id: recruitment-service
+            uri: lb://RECRUITMENT-SERVICE
+            predicates:
+              - Path=/api/recruitment/**
+            filters:
+              - AuthenticationFilter
+
+  eureka:
+    client:
+      service-url:
+        defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+    instance:
+      prefer-ip-address: true
+
+  jwt:
+    secret: ${JWT_SECRET}
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: "*"
+    endpoint:
+      gateway:
+        enabled: true
+
+  logging:
+    level:
+      org.springframework.cloud.gateway: DEBUG
+      org.springframework.cloud.loadbalancer: DEBUG
